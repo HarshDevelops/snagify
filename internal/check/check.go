@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/harshdevelops/snagify/internal/capture"
 	"github.com/harshdevelops/snagify/internal/config"
@@ -124,7 +125,7 @@ func checkRuntimes(r *report.Report, snap model.Snapshot, cfg config.Config) {
 }
 
 func checkEnv(r *report.Report, cfg config.Config, projectRoot string) {
-	if len(cfg.Env.Required) == 0 {
+	if len(cfg.Env.Required) == 0 && len(cfg.Env.Recommended) == 0 {
 		return
 	}
 	actual := cfg.Env.ActualFile
@@ -141,19 +142,53 @@ func checkEnv(r *report.Report, cfg config.Config, projectRoot string) {
 		present[k] = true
 	}
 
-	var missing []string
+	// Required missing => grouped critical.
+	var missingRequired []string
 	for _, req := range cfg.Env.Required {
 		if !exists || !present[req] {
-			missing = append(missing, req)
+			missingRequired = append(missingRequired, req)
 		}
 	}
-	for _, m := range missing {
+	if len(missingRequired) > 0 {
+		joined := strings.Join(missingRequired, ", ")
+		n := len(missingRequired)
+		label := fmt.Sprintf("%d required %s missing", n, plural("key", n))
 		r.Add(report.Item{
 			Category: "Env", Name: ".env",
-			Found: "missing: " + m, Expected: "present", Severity: report.Critical,
-			Blocker: fmt.Sprintf("required env key %s is absent", m),
+			Found:    label,
+			Expected: "all present",
+			Severity: report.Critical,
+			Blocker:  fmt.Sprintf("Required env keys are absent: %s", joined),
 		})
 	}
+
+	// Recommended missing => grouped warning.
+	var missingRecommended []string
+	for _, rec := range cfg.Env.Recommended {
+		if !exists || !present[rec] {
+			missingRecommended = append(missingRecommended, rec)
+		}
+	}
+	if len(missingRecommended) > 0 {
+		n := len(missingRecommended)
+		label := fmt.Sprintf("%d recommended %s missing", n, plural("key", n))
+		joined := strings.Join(missingRecommended, ", ")
+		r.Add(report.Item{
+			Category: "Env", Name: ".env",
+			Found:    label,
+			Expected: "present (recommended)",
+			Severity: report.Warning,
+			Blocker:  fmt.Sprintf("Recommended env keys are absent: %s", joined),
+		})
+	}
+	// Optional missing => silently ignored.
+}
+
+func plural(word string, n int) string {
+	if n == 1 {
+		return word
+	}
+	return word + "s"
 }
 
 func checkPorts(r *report.Report, cfg config.Config, probe PortProbe) {

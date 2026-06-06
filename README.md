@@ -147,6 +147,11 @@ read), ports that must be free or listening, git branch/clean rules, required
 PATH commands, Docker/compose requirements, system expectations, and active
 service/network/TLS probes.
 
+> **Env key classification:** `snagify init` classifies `.env.example` keys as
+> `required`, `recommended`, or `optional` using conservative heuristics.
+> Review `.snagify.yaml` after `snagify init`, especially for feature flags and
+> optional providers — the generated lists are a starting point, not a contract.
+
 ### Baselines for teams
 
 Capture a known-good machine as a sanitized baseline, commit it, and let

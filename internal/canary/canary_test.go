@@ -44,11 +44,15 @@ func TestSecretNeverLeaks(t *testing.T) {
 	rep := baseline.Compare(base, snap)
 	assertReportFormatsClean(t, "baseline report", rep)
 
-	// 4. Config check report in all formats
+	// 4. Config check report in all formats — required + recommended lists
 	cfg := config.Config{
 		Project:  config.Project{Name: "app"},
 		Runtimes: map[string]string{"go": "required"},
-		Env:      config.Env{ActualFile: ".env", Required: []string{"DATABASE_URL", "JWT_SECRET", "REDIS_URL"}},
+		Env: config.Env{
+			ActualFile:  ".env",
+			Required:    []string{"DATABASE_URL", "JWT_SECRET", "REDIS_URL"},
+			Recommended: []string{"MAX_RETRIES"},
+		},
 	}
 	checkRep := check.Run(snap, cfg, dir, check.Options{Probe: func(int) bool { return false }})
 	assertReportFormatsClean(t, "check report", checkRep)

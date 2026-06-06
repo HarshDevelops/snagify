@@ -10,7 +10,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/harshdevelops/snagify/internal/capture"
 	"github.com/harshdevelops/snagify/internal/model"
 )
 
@@ -53,13 +52,38 @@ func Generate(snap model.Snapshot, projectRoot string) string {
 	}
 
 	// Env section if an example file exists.
-	if exampleFile, keys, ok := detectEnv(projectRoot); ok {
+	if exampleFile, entries, ok := detectEnv(projectRoot); ok {
 		b.WriteString("env:\n")
 		b.WriteString(fmt.Sprintf("  example_file: %s\n", yamlString(exampleFile)))
 		b.WriteString("  actual_file: \".env\"\n")
-		if len(keys) > 0 {
+
+		var req, rec, opt []string
+		for _, e := range entries {
+			switch e.Class {
+			case EnvRequired:
+				req = append(req, e.Key)
+			case EnvRecommended:
+				rec = append(rec, e.Key)
+			default:
+				opt = append(opt, e.Key)
+			}
+		}
+
+		if len(req) > 0 {
 			b.WriteString("  required:\n")
-			for _, k := range keys {
+			for _, k := range req {
+				b.WriteString(fmt.Sprintf("    - %s\n", k))
+			}
+		}
+		if len(rec) > 0 {
+			b.WriteString("  recommended:\n")
+			for _, k := range rec {
+				b.WriteString(fmt.Sprintf("    - %s\n", k))
+			}
+		}
+		if len(opt) > 0 {
+			b.WriteString("  optional:\n")
+			for _, k := range opt {
 				b.WriteString(fmt.Sprintf("    - %s\n", k))
 			}
 		}
@@ -118,13 +142,16 @@ func majorOf(version string) string {
 	return v
 }
 
-// detectEnv returns the example file name and its declared keys (names only).
-func detectEnv(root string) (string, []string, bool) {
+// detectEnv returns the example file name and classified env entries.
+func detectEnv(root string) (string, []EnvEntry, bool) {
 	for _, name := range []string{".env.example", ".env.sample", ".env.template"} {
 		p := filepath.Join(root, name)
 		if fileExists(p) {
-			keys, _ := capture.ReadEnvKeys(p)
-			return name, keys, true
+			entries, err := ClassifyEnvExample(p)
+			if err != nil || len(entries) == 0 {
+				return name, nil, true
+			}
+			return name, entries, true
 		}
 	}
 	return "", nil, false

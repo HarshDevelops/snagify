@@ -109,10 +109,14 @@ type Project struct {
 }
 
 // Env describes env-file requirements.
+// Required keys failing => critical. Recommended keys missing => warning.
+// Optional keys missing => ignored (silent).
 type Env struct {
 	ExampleFile string   `yaml:"example_file"`
 	ActualFile  string   `yaml:"actual_file"`
 	Required    []string `yaml:"required"`
+	Recommended []string `yaml:"recommended"`
+	Optional    []string `yaml:"optional"`
 }
 
 // Ports describes port requirements.

@@ -3,6 +3,28 @@
 All notable changes to Snagify are documented here. This project adheres to
 semantic versioning.
 
+## v0.3.2
+
+Reduce `.env.example` noise from `snagify init` and `snagify check`.
+
+- `snagify init` now classifies `.env.example` keys as `required`,
+  `recommended`, or `optional` using conservative heuristics:
+  - Blank keys with sensitive names (API_KEY, TOKEN, SECRET, DATABASE_URL, etc.)
+    → `required`.
+  - Keys with concrete defaults, or tuning names (MAX, RETRY, TIMEOUT, etc.)
+    → `recommended`.
+  - Keys belonging to disabled feature groups (e.g. `FALLBACK_1_ENABLED=false`
+    causes all `FALLBACK_1_*` keys) → `optional`.
+  - Comment hints in `.env.example` (`# required`, `# optional`, etc.)
+    override heuristics.
+- `snagify check` maps the three classes to severities:
+  - `required` missing → critical blocker.
+  - `recommended` missing → warning.
+  - `optional` missing → silently ignored.
+- Grouped env output: instead of N separate rows for N missing keys, a single
+  grouped row shows the count and lists all keys in the blocker message.
+- Backwards compatible: existing configs with only `env.required` keep working.
+
 ## v0.3.1
 
 Docs/packaging patch.
