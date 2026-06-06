@@ -19,17 +19,28 @@ var ErrPinMismatch = errors.New("certificate fingerprint does not match --pin")
 
 // FetchOptions configures a baseline fetch.
 type FetchOptions struct {
-	URL        string
-	Pin        string // expected fingerprint, with or without "sha256:" prefix
-	UnsafeHTTP bool   // allow plain HTTP (no pinning); prints caller's warning
-	Timeout    time.Duration
+	URL         string
+	Pin         string // expected fingerprint, with or without "sha256:" prefix
+	UnsafeHTTP  bool   // allow plain HTTP (no pinning); prints caller's warning
+	Timeout     time.Duration
+	PairingCode string // if non-empty, appended as ?code=XXX query parameter
 }
 
 // Fetch downloads a baseline from a sharing server. For HTTPS it pins the
 // server certificate fingerprint exactly and fails loudly on mismatch. The
 // response body size is capped.
 func Fetch(opts FetchOptions) ([]byte, error) {
-	u, err := url.Parse(strings.TrimSpace(opts.URL))
+	rawURL := strings.TrimSpace(opts.URL)
+	// Append pairing code as query parameter if provided.
+	if opts.PairingCode != "" {
+		sep := "?"
+		if strings.Contains(rawURL, "?") {
+			sep = "&"
+		}
+		rawURL = rawURL + sep + "code=" + opts.PairingCode
+	}
+
+	u, err := url.Parse(rawURL)
 	if err != nil {
 		return nil, fmt.Errorf("invalid --from URL: %w", err)
 	}

@@ -34,3 +34,12 @@ func Load(path string) (model.Snapshot, error) {
 	}
 	return s, nil
 }
+
+// MarshalJSON serializes a snapshot to indented JSON bytes without writing to disk.
+func MarshalJSON(s model.Snapshot) ([]byte, error) {
+	data, err := json.MarshalIndent(s, "", "  ")
+	if err != nil {
+		return nil, fmt.Errorf("marshal snapshot: %w", err)
+	}
+	return data, nil
+}

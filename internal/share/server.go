@@ -2,9 +2,11 @@ package share
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"math/big"
 	"net"
 	"net/http"
 	"sync"
@@ -19,6 +21,9 @@ type ServerOptions struct {
 	TTL          time.Duration // lifetime before auto-shutdown
 	MaxDownloads int           // shut down after this many successful downloads
 	UnsafeHTTP   bool          // serve plain HTTP (insecure) instead of TLS
+	// PairingCode, when non-empty, requires the client to supply it as the
+	// ?code= query parameter. Never logged, never in TXT records.
+	PairingCode string
 }
 
 // Server is a running baseline-sharing server.
@@ -98,6 +103,29 @@ func StartServer(baseline []byte, opts ServerOptions) (*Server, error) {
 
 	path := "/baseline/" + token
 	mux := http.NewServeMux()
+
+	// /resolve — returns {"url":"<full download URL>"} after code verification.
+	// Used by LAN compare to discover the token URL without manual --pin paste.
+	mux.HandleFunc("/resolve", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.NotFound(w, r)
+			return
+		}
+		if r.ContentLength > 0 {
+			http.Error(w, "uploads not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		if opts.PairingCode != "" {
+			supplied := r.URL.Query().Get("code")
+			if !constantTimeEqual(supplied, opts.PairingCode) {
+				http.Error(w, "invalid pairing code", http.StatusForbidden)
+				return
+			}
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = fmt.Fprintf(w, `{"url":%q}`, srv.URL)
+	})
+
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		// Only the exact token path with GET is served; everything else 404s.
 		if r.Method != http.MethodGet || r.URL.Path != path {
@@ -108,6 +136,16 @@ func StartServer(baseline []byte, opts ServerOptions) (*Server, error) {
 		if r.ContentLength > 0 {
 			http.Error(w, "uploads not allowed", http.StatusMethodNotAllowed)
 			return
+		}
+		// Pairing-code gate: if configured, the ?code= param must match.
+		// The code is compared using a constant-time approach to avoid timing
+		// side-channels. Do NOT log the supplied code.
+		if opts.PairingCode != "" {
+			supplied := r.URL.Query().Get("code")
+			if !constantTimeEqual(supplied, opts.PairingCode) {
+				http.Error(w, "invalid pairing code", http.StatusForbidden)
+				return
+			}
 		}
 		n := atomic.AddInt64(&srv.downloads, 1)
 		if n > int64(srv.MaxDownloads) {
@@ -194,4 +232,39 @@ func localIP() string {
 		}
 	}
 	return "127.0.0.1"
+}
+
+// constantTimeEqual compares two strings in constant time to prevent
+// timing attacks on pairing codes.
+func constantTimeEqual(a, b string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	var diff byte
+	for i := 0; i < len(a); i++ {
+		diff |= a[i] ^ b[i]
+	}
+	return diff == 0
+}
+
+// PairingCode generates a random 6-digit decimal code using crypto/rand.
+// The code is printed to the operator only; never logged, never in mDNS TXT.
+func PairingCode() (string, error) {
+	n, err := cryptoRandInt(1_000_000)
+	if err != nil {
+		return "", fmt.Errorf("generate pairing code: %w", err)
+	}
+	return fmt.Sprintf("%06d", n), nil
+}
+
+// LocalIP is the exported version for use in the LAN advertiser.
+func LocalIP() string { return localIP() }
+
+// cryptoRandInt returns a random int64 in [0, max).
+func cryptoRandInt(max int64) (int64, error) {
+	n, err := rand.Int(rand.Reader, big.NewInt(max))
+	if err != nil {
+		return 0, err
+	}
+	return n.Int64(), nil
 }

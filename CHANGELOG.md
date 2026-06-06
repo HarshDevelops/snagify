@@ -3,6 +3,28 @@
 All notable changes to Snagify are documented here. This project adheres to
 semantic versioning.
 
+## v0.4.0
+
+LAN compare, doctor, and fix workflow.
+
+- `snagify share current --lan` — capture the current machine as a sanitized
+  baseline and advertise it on the LAN/VPN via mDNS (_snagify._tcp). Supports
+  pairing-code mode (default) and open mode (--open).
+- `snagify compare --lan` — discover a LAN share via mDNS, download the
+  sanitized baseline over TLS-pinned HTTPS (certificate fingerprint from mDNS
+  TXT), capture local snapshot, compare locally. Teammate snapshot never leaves
+  their machine.
+- `snagify doctor` — run check logic and emit a structured fix plan (safe /
+  guided / unfixable). Never mutates files.
+- `snagify fix --safe` — apply only safe fixes: create .env from .env.example,
+  append missing keys as blank placeholders, pull required Docker images (with
+  --yes). Supports --dry-run, --yes. Never invents secret values, never
+  installs runtimes.
+- `snagify fix --guided` — print version-manager commands for runtime
+  mismatches (nvm/sdkman/pyenv/brew). Prints only, does not execute.
+- GitHub SEO: H1 updated, docs/ guides added covering works-on-my-machine,
+  environment-drift, compare-dev-environments, local-vs-ci, dotenv-missing-keys.
+
 ## v0.3.2
 
 Reduce `.env.example` noise from `snagify init` and `snagify check`.

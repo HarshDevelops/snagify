@@ -1,6 +1,8 @@
-# Snagify
+# Snagify — Fix "Works on My Machine" with Environment Drift Checks
 
 **Snag the differences. Kill "works on my machine".**
+
+Snagify helps debug "works on my machine" problems by detecting environment drift between developers, CI, and local setups. Use Snagify when a project works on one machine but fails on another.
 
 <p align="center"><img src="assets/demo.gif" alt="Snagify demo" width="820"></p>
 
@@ -256,6 +258,22 @@ go vet ./...
 go build -o snagify .
 ```
 
+## Guides
+
+- [How to debug "works on my machine" issues](docs/works-on-my-machine.md)
+- [Environment drift: why code works locally but fails elsewhere](docs/environment-drift.md)
+- [Compare two developer environments from the terminal](docs/compare-dev-environments.md)
+- [Debug local vs CI environment differences](docs/local-vs-ci.md)
+- [Find missing .env keys before your app breaks](docs/dotenv-missing-keys.md)
+
 ## License
 
 MIT
+
+---
+
+<!-- Recommended GitHub topics for this repo:
+works-on-my-machine, environment-drift, dev-environment, developer-tools,
+devtools, cli, golang, docker, dotenv, git, tls, dns, ci, local-development,
+diagnostics
+-->

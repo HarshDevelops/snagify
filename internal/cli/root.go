@@ -34,5 +34,8 @@ func NewRootCmd(version string) *cobra.Command {
 	root.AddCommand(newBaselineCmd())
 	root.AddCommand(newDiffManyCmd())
 	root.AddCommand(newShareCmd())
+	root.AddCommand(newCompareCmd())
+	root.AddCommand(newDoctorCmd())
+	root.AddCommand(newFixCmd())
 	return root
 }
