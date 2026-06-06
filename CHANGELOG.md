@@ -3,6 +3,14 @@
 All notable changes to Snagify are documented here. This project adheres to
 semantic versioning.
 
+## v0.3.1
+
+Docs/packaging patch.
+
+- Added a README demo GIF (generated with VHS; see `assets/demo.tape`).
+- Rewrote the README as a value-first landing page; moved version history here.
+- Bumped the CLI version string to 0.3.1. No product behavior changes.
+
 ## v0.3.0
 
 Diagnostics expansion — majority coverage of common "works on my machine"
