@@ -1,0 +1,16 @@
+# Binaries
+/snagify
+snagify
+*.exe
+
+# Editor atomic-write temp artifacts (e.g. .!25591!snagify)
+.!*
+
+# Snapshots produced by the tool
+snagify-snapshot-*.json
+
+# Go
+/vendor/
+
+# graphify
+graphify-out/cost.json
