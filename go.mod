@@ -5,6 +5,7 @@ go 1.23
 require (
 	github.com/charmbracelet/lipgloss v0.13.0
 	github.com/spf13/cobra v1.8.1
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (

@@ -70,6 +70,129 @@ snagify diff a.json b.json --format json      # machine-readable
 Exit code is `0` when the environments match and `1` when differences are
 found, so it composes cleanly in scripts and CI.
 
+## Team workflow (v0.2)
+
+For teams, pairwise snapshot sharing doesn't scale. v0.2 adds repo-defined
+requirements, sanitized baselines, a team drift summary, and secure
+same-LAN/VPN baseline sharing.
+
+### `snagify init [--force]`
+
+Generates a conservative starter `.snagify.yaml` from your detected manifests
+(package.json → node/npm, pom.xml → java/maven, docker-compose → docker,
+`.env.example` → env keys). Never writes secret values or absolute paths.
+Refuses to overwrite an existing file unless `--force` is passed.
+
+### `snagify check`
+
+Checks this machine against requirements and prints a ranked report. Exit code
+`0` = passed, `1` = failed, `2` = config/runtime error.
+
+```sh
+snagify check                                  # against .snagify.yaml
+snagify check --config path/to/.snagify.yaml   # explicit config
+snagify check --against .snagify/baseline.json # against a baseline file
+snagify check --format markdown|json           # other formats
+```
+
+`.snagify.yaml` supports runtime version requirements (`"17"`, `">=20 <23"`,
+`">=3.8"`, `"required"`), required env keys (names only — values are never
+read), and ports that must be free or listening.
+
+### `snagify baseline create --out <path>`
+
+Captures the current machine as a sanitized, shareable baseline: hostname and
+absolute paths removed, runtime/port/env-key info kept, secret values never
+included. Safe to commit.
+
+```sh
+snagify baseline create --out .snagify/baseline.json
+# teammates:
+snagify check --against .snagify/baseline.json
+```
+
+### `snagify diff-many --against <baseline.json> <snapshots-dir>`
+
+Compares every snapshot in a folder against a baseline and prints a team drift
+table plus the most common blockers.
+
+### `snagify share baseline --file <baseline.json>`
+
+Serves a baseline over a temporary, TLS-encrypted, fingerprint-pinned server on
+your LAN/VPN. A one-time random token guards the path, the server expires
+(default 10m) and stops after a max number of downloads (default 20), and it
+never accepts uploads. The teammate's machine snapshot never leaves their
+machine.
+
+```sh
+# known-good machine:
+snagify share baseline --file .snagify/baseline.json
+# prints a command including --pin <fingerprint>
+
+# teammate (same LAN/VPN):
+snagify check --from https://<host>:<port>/baseline/<token> --pin sha256:<fingerprint>
+```
+
+Flags: `--host`, `--port`, `--ttl`, `--max-downloads`, and `--unsafe-http`
+(plain HTTP, prints a warning). Direct sharing requires the machines to reach
+each other (same Wi-Fi, office LAN, or VPN) — there is no NAT traversal or
+cloud relay.
+
+## Majority-coverage diagnostics (v0.3)
+
+v0.3 widens coverage of common "works on my machine" failure classes. All new
+config sections are optional; existing v0.2 configs keep working unchanged.
+
+`snagify snapshot` now also captures (passively, fast, no network by default):
+
+- **Git** — branch, short commit, dirty/untracked state, ahead/behind.
+- **PATH/executables** — resolved locations of common tools, with the home
+  directory redacted to `~` (no usernames or absolute home paths stored).
+- **System** — timezone, locale (`LC_ALL`/`LC_CTYPE`/`LANG`), and a
+  case-sensitivity probe of a temp file (always cleaned up).
+- **Docker** — runtime + compose version, compose files in the root, local
+  images and running containers (read-only; no containers are started).
+
+Add `--probes` to also run the active probes declared in config.
+
+`snagify check` additionally validates git (`require_branch`, `require_clean`,
+`warn_if_dirty`), required PATH commands, Docker (`required`, `compose_files`,
+`required_images`, `required_containers`), and system (`timezone`, `locale`,
+`case_sensitive_fs`, `allowed_arch`). It runs active probes only when the
+config declares them.
+
+```sh
+snagify check --no-network   # skip DNS/HTTP probes
+snagify check --no-tls       # skip TLS probes
+snagify check --no-docker    # skip Docker checks
+snagify check --timeout 2s   # per-probe timeout
+```
+
+### `snagify probe`
+
+Runs only the active connectivity probes from config — handy for a quick
+connectivity check without the full setup check:
+
+- **TCP services** — reachability dial (no credentials, no DB protocols).
+- **DNS** — name resolution.
+- **HTTP** — status-code check only; response bodies are never read.
+- **TLS** — handshake, hostname verification, issuer, and expiry. Verification
+  is never disabled unless you pass `--insecure-probe` (which prints a loud
+  warning).
+- **Proxy** — records only whether `HTTP(S)_PROXY`/`NO_PROXY` are set, never
+  their values.
+
+Active probes only run when `services`, `network`, or `tls` sections exist in
+`.snagify.yaml`. See [docs/TRACE.md](docs/TRACE.md) for the future `trace` mode
+design note.
+
+### Honest promise
+
+Snagify detects *likely* setup blockers and environment drift. It does not
+claim a proven universal root cause. Output uses "likely blocker" and "may
+affect runtime behavior" rather than asserting an exact cause, except for
+deterministic config violations (e.g. a required command missing from PATH).
+
 ### Global flags
 
 - `--project-root <path>` — override project auto-detection.

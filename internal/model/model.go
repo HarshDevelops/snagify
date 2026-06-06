@@ -1,6 +1,8 @@
 // Package model defines the data structures captured in a Snagify snapshot.
 package model
 
+import "strings"
+
 // Snapshot is the full capture of a machine/project state at a point in time.
 type Snapshot struct {
 	Timestamp   string      `json:"timestamp"`
@@ -10,6 +12,16 @@ type Snapshot struct {
 	Runtimes    Runtimes    `json:"runtimes"`
 	Services    Services    `json:"services"`
 	EnvFiles    EnvFiles    `json:"env_files"`
+
+	// v0.3 passive sections (all optional for backward compatibility).
+	Git    *GitInfo    `json:"git,omitempty"`
+	Path   *PathInfo   `json:"path,omitempty"`
+	System *SystemInfo `json:"system,omitempty"`
+	Docker *DockerInfo `json:"docker,omitempty"`
+
+	// Probes is populated only when active probes run (snapshot --probes or
+	// check with probe-bearing config).
+	Probes *ProbeResults `json:"probes,omitempty"`
 }
 
 // ProjectInfo describes the detected project root and its manifests.
@@ -94,4 +106,15 @@ var RuntimeFields = []RuntimeField{
 	{"Rust", func(r Runtimes) VersionInfo { return r.Rust }},
 	{"Cargo", func(r Runtimes) VersionInfo { return r.Cargo }},
 	{"Docker", func(r Runtimes) VersionInfo { return r.Docker }},
+}
+
+// LookupRuntime returns the VersionInfo for a runtime by case-insensitive name
+// (e.g. "node", "java", "maven"), and whether the name is known.
+func LookupRuntime(r Runtimes, name string) (VersionInfo, bool) {
+	for _, f := range RuntimeFields {
+		if strings.EqualFold(f.Name, name) {
+			return f.Get(r), true
+		}
+	}
+	return VersionInfo{}, false
 }

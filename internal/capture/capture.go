@@ -27,6 +27,11 @@ func Capture(opts Options) (model.Snapshot, error) {
 
 	project := detectProject(cwd, opts.ProjectRoot)
 
+	git := captureGit(project.Root)
+	pathInfo := capturePath()
+	system := captureSystem()
+	docker := captureDocker(project.Root)
+
 	return model.Snapshot{
 		Timestamp:   time.Now().UTC().Format(time.RFC3339),
 		Hostname:    hostname,
@@ -35,5 +40,9 @@ func Capture(opts Options) (model.Snapshot, error) {
 		Runtimes:    captureRuntimes(),
 		Services:    capturePorts(),
 		EnvFiles:    captureEnvFiles(project.Root),
+		Git:         &git,
+		Path:        &pathInfo,
+		System:      &system,
+		Docker:      &docker,
 	}, nil
 }

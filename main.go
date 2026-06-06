@@ -11,7 +11,7 @@ import (
 )
 
 // version is overridable at build time via -ldflags "-X main.version=...".
-var version = "0.1.0"
+var version = "0.2.0"
 
 // coder is implemented by errors that carry a desired exit code.
 type coder interface{ Code() int }
@@ -21,6 +21,9 @@ func main() {
 	if err := root.Execute(); err != nil {
 		var c coder
 		if errors.As(err, &c) {
+			if msg := err.Error(); msg != "" {
+				fmt.Fprintln(os.Stderr, "error:", msg)
+			}
 			os.Exit(c.Code())
 		}
 		fmt.Fprintln(os.Stderr, "error:", err)

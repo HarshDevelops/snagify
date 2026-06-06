@@ -28,5 +28,11 @@ func NewRootCmd(version string) *cobra.Command {
 
 	root.AddCommand(newSnapshotCmd())
 	root.AddCommand(newDiffCmd())
+	root.AddCommand(newCheckCmd())
+	root.AddCommand(newProbeCmd())
+	root.AddCommand(newInitCmd())
+	root.AddCommand(newBaselineCmd())
+	root.AddCommand(newDiffManyCmd())
+	root.AddCommand(newShareCmd())
 	return root
 }

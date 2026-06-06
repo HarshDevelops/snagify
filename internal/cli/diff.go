@@ -73,10 +73,14 @@ func label(path, hostname string) string {
 	return path
 }
 
-// exitError carries a desired process exit code up to main without printing.
-type exitError struct{ code int }
+// exitError carries a desired process exit code up to main, optionally with a
+// message to print to stderr.
+type exitError struct {
+	code int
+	msg  string
+}
 
-func (e *exitError) Error() string { return "" }
+func (e *exitError) Error() string { return e.msg }
 
 // Code returns the intended process exit code.
 func (e *exitError) Code() int { return e.code }

@@ -8,11 +8,15 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/harshdevelops/snagify/internal/capture"
+	"github.com/harshdevelops/snagify/internal/check"
+	"github.com/harshdevelops/snagify/internal/config"
+	"github.com/harshdevelops/snagify/internal/probe"
 	"github.com/harshdevelops/snagify/internal/store"
 )
 
 func newSnapshotCmd() *cobra.Command {
 	var quiet bool
+	var probes bool
 
 	cmd := &cobra.Command{
 		Use:   "snapshot [output.json]",
@@ -22,6 +26,18 @@ func newSnapshotCmd() *cobra.Command {
 			snap, err := capture.Capture(capture.Options{ProjectRoot: flagProjectRoot})
 			if err != nil {
 				return fmt.Errorf("capture failed: %w", err)
+			}
+
+			// Active probes are opt-in and require a config with probe sections.
+			if probes {
+				if path, ok := check.FindConfig("", snap.Project.Root); ok {
+					if cfg, cfgErr := config.Load(path); cfgErr == nil && cfg.HasActiveProbes() {
+						results := probe.Run(cfg, probe.Options{})
+						snap.Probes = &results
+					}
+				} else if flagVerbose {
+					fmt.Fprintln(cmd.ErrOrStderr(), "--probes set but no .snagify.yaml with probe sections found")
+				}
 			}
 
 			out := defaultName(snap.Hostname)
@@ -44,6 +60,7 @@ func newSnapshotCmd() *cobra.Command {
 	}
 
 	cmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "suppress non-error output")
+	cmd.Flags().BoolVar(&probes, "probes", false, "also run active probes declared in .snagify.yaml")
 	return cmd
 }
 
