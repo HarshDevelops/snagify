@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/HarshDevelops/snagify/internal/cli"
+	"github.com/harshdevelops/snagify/internal/cli"
 )
 
 // version is overridable at build time via -ldflags "-X main.version=...".

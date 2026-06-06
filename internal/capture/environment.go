@@ -3,7 +3,7 @@ package capture
 import (
 	"runtime"
 
-	"github.com/HarshDevelops/snagify/internal/model"
+	"github.com/harshdevelops/snagify/internal/model"
 )
 
 // captureEnvironment gathers OS, arch, OS version, and git version.

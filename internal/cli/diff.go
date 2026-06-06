@@ -7,9 +7,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/HarshDevelops/snagify/internal/diff"
-	"github.com/HarshDevelops/snagify/internal/render"
-	"github.com/HarshDevelops/snagify/internal/store"
+	"github.com/harshdevelops/snagify/internal/diff"
+	"github.com/harshdevelops/snagify/internal/render"
+	"github.com/harshdevelops/snagify/internal/store"
 )
 
 func newDiffCmd() *cobra.Command {

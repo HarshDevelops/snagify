@@ -5,7 +5,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/HarshDevelops/snagify/internal/model"
+	"github.com/harshdevelops/snagify/internal/model"
 )
 
 // commonPorts maps frequently used dev ports to a human service label.

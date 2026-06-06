@@ -3,7 +3,7 @@
 package diff
 
 import (
-	"github.com/HarshDevelops/snagify/internal/model"
+	"github.com/harshdevelops/snagify/internal/model"
 )
 
 // Severity ranks a difference by how likely it is to break a setup.

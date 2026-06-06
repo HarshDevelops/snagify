@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/HarshDevelops/snagify/internal/model"
+	"github.com/harshdevelops/snagify/internal/model"
 )
 
 // manifestFiles are the marker files used to detect a project root. Order is

@@ -4,7 +4,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/HarshDevelops/snagify/internal/model"
+	"github.com/harshdevelops/snagify/internal/model"
 )
 
 // Options configures a capture run.

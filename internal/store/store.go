@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/HarshDevelops/snagify/internal/model"
+	"github.com/harshdevelops/snagify/internal/model"
 )
 
 // Save writes a snapshot to path as indented JSON.

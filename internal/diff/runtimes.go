@@ -3,7 +3,7 @@ package diff
 import (
 	"fmt"
 
-	"github.com/HarshDevelops/snagify/internal/model"
+	"github.com/harshdevelops/snagify/internal/model"
 )
 
 // projectRuntimes maps a manifest file to the runtimes it implies are

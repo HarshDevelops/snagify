@@ -1,4 +1,4 @@
-module github.com/HarshDevelops/snagify
+module github.com/harshdevelops/snagify
 
 go 1.23
 

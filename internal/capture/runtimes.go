@@ -1,6 +1,6 @@
 package capture
 
-import "github.com/HarshDevelops/snagify/internal/model"
+import "github.com/harshdevelops/snagify/internal/model"
 
 // probe runs `bin <arg>` and returns a populated VersionInfo. It records the
 // resolved binary path and parses a clean version from the output.

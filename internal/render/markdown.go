@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/HarshDevelops/snagify/internal/diff"
+	"github.com/harshdevelops/snagify/internal/diff"
 )
 
 // Markdown writes a GitHub-friendly markdown report to w.

@@ -7,8 +7,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/HarshDevelops/snagify/internal/capture"
-	"github.com/HarshDevelops/snagify/internal/store"
+	"github.com/harshdevelops/snagify/internal/capture"
+	"github.com/harshdevelops/snagify/internal/store"
 )
 
 func newSnapshotCmd() *cobra.Command {

@@ -3,7 +3,7 @@
 # to the releases page. Usage: ./install.sh [install-dir]
 set -euo pipefail
 
-REPO="github.com/HarshDevelops/snagify"
+REPO="github.com/harshdevelops/snagify"
 INSTALL_DIR="${1:-${HOME}/.local/bin}"
 BIN="snagify"
 

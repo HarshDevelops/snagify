@@ -106,13 +106,13 @@ found, so it composes cleanly in scripts and CI.
 ## Install
 
 ```sh
-go install github.com/HarshDevelops/snagify@latest
+go install github.com/harshdevelops/snagify@latest
 ```
 
 Or build from source:
 
 ```sh
-git clone https://github.com/HarshDevelops/snagify.git
+git clone https://github.com/harshdevelops/snagify.git
 cd snagify
 go mod tidy
 go build -o snagify .

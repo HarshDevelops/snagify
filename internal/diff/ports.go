@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/HarshDevelops/snagify/internal/model"
+	"github.com/harshdevelops/snagify/internal/model"
 )
 
 // diffPorts reports ports whose listening state differs between machines.

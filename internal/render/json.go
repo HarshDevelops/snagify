@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"io"
 
-	"github.com/HarshDevelops/snagify/internal/diff"
+	"github.com/harshdevelops/snagify/internal/diff"
 )
 
 // JSON writes the diff result as indented JSON to w.

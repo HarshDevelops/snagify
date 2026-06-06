@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/HarshDevelops/snagify/internal/diff"
+	"github.com/harshdevelops/snagify/internal/diff"
 )
 
 var (

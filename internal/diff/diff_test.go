@@ -3,7 +3,7 @@ package diff
 import (
 	"testing"
 
-	"github.com/HarshDevelops/snagify/internal/model"
+	"github.com/harshdevelops/snagify/internal/model"
 )
 
 func vi(version string) model.VersionInfo {
