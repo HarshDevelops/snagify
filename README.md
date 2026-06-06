@@ -2,6 +2,8 @@
 
 **Snag the differences. Kill "works on my machine".**
 
+<p align="center"><img src="assets/demo.gif" alt="Snagify demo" width="820"></p>
+
 Snagify is a single-binary CLI that surfaces likely setup blockers when a
 project works on one machine but fails on another.
 
