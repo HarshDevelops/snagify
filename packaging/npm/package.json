@@ -4,7 +4,7 @@
   "description": "CLI to debug works-on-my-machine issues by detecting environment drift.",
   "license": "MIT",
   "bin": {
-    "snagify": "./bin/snagify.js"
+    "snagify": "bin/snagify.js"
   },
   "scripts": {
     "postinstall": "node install.js"
