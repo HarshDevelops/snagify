@@ -88,3 +88,11 @@ Initial release.
 
 - `snagify snapshot` and `snagify diff` with terminal, markdown, and JSON
   output and ranked blockers.
+
+## v0.4.1
+
+- Add GoReleaser release packaging.
+- Prepare clean npm package `snagify`.
+- Prepare clean PyPI package `snagify`.
+- Add Homebrew formula template.
+- No product behavior changes.
