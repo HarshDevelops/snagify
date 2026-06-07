@@ -11,7 +11,7 @@ import (
 )
 
 // version is overridable at build time via -ldflags "-X main.version=...".
-var version = "0.4.0"
+var version = "0.4.1"
 
 // coder is implemented by errors that carry a desired exit code.
 type coder interface{ Code() int }
