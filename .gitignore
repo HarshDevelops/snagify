@@ -14,3 +14,10 @@ snagify-snapshot-*.json
 
 # graphify
 graphify-out/cost.json
+
+# release/package build artifacts
+dist/
+packaging/npm/*.tgz
+packaging/pypi/dist/
+packaging/pypi/build/
+packaging/pypi/*.egg-info/
