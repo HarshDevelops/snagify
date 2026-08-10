@@ -5,8 +5,14 @@ on:
     tags:
       - 'v*.*.*'
 
+# Both jobs need:
+#   contents: write  - create the GitHub Release draft and upload assets
+#   packages: write  - publish container images to ghcr.io/HarshDevelops/* (an
+#                     organization-scoped GHCR namespace that the default
+#                     GITHUB_TOKEN can't push to without explicit grant)
 permissions:
   contents: write
+  packages: write
 
 jobs:
   goreleaser:
@@ -102,16 +108,17 @@ jobs:
           push: true
 
       # Combine into a multi-arch manifest for each semver tag.
+      #
+      # We use `docker buildx imagetools create` rather than the legacy
+      # `docker manifest create` because per-arch buildx pushes produce
+      # manifest lists themselves — legacy `docker manifest` then errors
+      # with "... is a manifest list". buildx imagetools understands that
+      # shape and combines cleanly.
       - name: Combine into multi-arch manifest
         run: |
           VERSION="${{ needs.goreleaser.outputs.version }}"
-          docker manifest create \
-            "ghcr.io/harshdevelops/snagify:${VERSION}" \
+          docker buildx imagetools create \
+            -t "ghcr.io/harshdevelops/snagify:${VERSION}" \
+            -t "ghcr.io/harshdevelops/snagify:latest" \
               "ghcr.io/harshdevelops/snagify:${VERSION}-amd64" \
               "ghcr.io/harshdevelops/snagify:${VERSION}-arm64"
-          docker manifest push "ghcr.io/harshdevelops/snagify:${VERSION}"
-          docker manifest create \
-            "ghcr.io/harshdevelops/snagify:latest" \
-              "ghcr.io/harshdevelops/snagify:${VERSION}-amd64" \
-              "ghcr.io/harshdevelops/snagify:${VERSION}-arm64"
-          docker manifest push "ghcr.io/harshdevelops/snagify:latest"

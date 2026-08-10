@@ -1,39 +1,37 @@
 # syntax=docker/dockerfile:1.7
 #
-# Snagify — runtime-only container image.
+# Snagify — multi-stage container image.
 #
-# Stage 1 (build): bash + curl to download the v0.5.0+ snagify binary tarball
-# from the GitHub release we are publishing in this same workflow. We do not
-# compile from source here — that's goreleaser's job, and it already produced
-# the archive in dist/ before this image is built.
+# Stage 1 (build): golang toolchain matching the project's go.mod. We build
+# the binary here from source, with CGO disabled to produce a static binary
+# the distroless final stage can run unmodified.
 #
 # Stage 2 (runtime): gcr.io/distroless/base-debian12:nonroot. We use `base`
-# rather than `static` because the snagify binary shells out to other tools
-# (`node --version`, `docker version`, etc.) for runtime detection. `nonroot`
-# because CI runners don't run as root.
+# (not `static` / scratch) because Snagify's runtime-probe helpers shell out
+# to other tools (`node --version`, `docker version`, etc.). `nonroot`
+# matches the assumption that CI runners don't run as root.
 
-FROM alpine:3.20 AS fetch
+ARG GO_VERSION=1.25
+
+FROM golang:${GO_VERSION}-alpine AS build
+WORKDIR /src
+
+# Cache the module graph first so `go mod download` only re-runs when the
+# go.mod / go.sum change. .dockerignore keeps the build context small.
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+
 ARG VERSION=dev
-ARG PLATFORM=amd64
-# Map PLATFORM (amd64 | arm64) onto the GoReleaser archive suffix.
-# GoReleaser emits `snagify_Linux_x86_64.tar.gz` for amd64 and
-# `snagify_Linux_arm64.tar.gz` for arm64. We use busybox `wget`
-# (always present in alpine:3.20) instead of `curl`, which isn't
-# installed by default on slim alpine images.
-RUN set -eux; \
-    case "$PLATFORM" in \
-        amd64) ARCH_SUFFIX=x86_64 ;; \
-        arm64) ARCH_SUFFIX=arm64  ;; \
-        *)     echo "unknown PLATFORM $PLATFORM" >&2; exit 1 ;; \
-    esac; \
-    url="https://github.com/Harshdevelops/snagify/releases/download/v${VERSION}/snagify_Linux_${ARCH_SUFFIX}.tar.gz"; \
-    wget -q -O /tmp/snagify.tar.gz "$url"; \
-    tar -xzf /tmp/snagify.tar.gz -C /tmp; \
-    install -m 0755 /tmp/snagify /tmp/snagify-bin
+ENV CGO_ENABLED=0 GOOS=linux
+RUN --mount=type=cache,target=/root/.cache/go-build \
+    go build -trimpath -ldflags "-s -w -X main.version=${VERSION}" \
+    -o /out/snagify .
 
 FROM gcr.io/distroless/base-debian12:nonroot AS runtime
 
-COPY --from=fetch /tmp/snagify-bin /usr/local/bin/snagify
+COPY --from=build /out/snagify /usr/local/bin/snagify
 
 USER nonroot:nonroot
 WORKDIR /workspace
