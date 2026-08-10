@@ -54,12 +54,12 @@ dockers:
     goarch: amd64
     dockerfile: Dockerfile
     image_templates:
-      - "ghcr.io/HarshDevelops/snagify:{{ .Version }}-amd64"
+      - "ghcr.io/harshdevelops/snagify:{{ .Version }}-amd64"
     build_flag_templates:
       - "--pull"
       - "--label=org.opencontainers.image.title=snagify"
       - "--label=org.opencontainers.image.description=Single-binary CLI to debug works-on-my-machine issues by detecting environment drift."
-      - "--label=org.opencontainers.image.source=https://github.com/HarshDevelops/snagify"
+      - "--label=org.opencontainers.image.source=https://github.com/Harshdevelops/snagify"
       - "--label=org.opencontainers.image.licenses=MIT"
     extra_files:
       - README.md
@@ -71,12 +71,12 @@ dockers:
     goarch: arm64
     dockerfile: Dockerfile
     image_templates:
-      - "ghcr.io/HarshDevelops/snagify:{{ .Version }}-arm64"
+      - "ghcr.io/harshdevelops/snagify:{{ .Version }}-arm64"
     build_flag_templates:
       - "--pull"
       - "--label=org.opencontainers.image.title=snagify"
       - "--label=org.opencontainers.image.description=Single-binary CLI to debug works-on-my-machine issues by detecting environment drift."
-      - "--label=org.opencontainers.image.source=https://github.com/HarshDevelops/snagify"
+      - "--label=org.opencontainers.image.source=https://github.com/Harshdevelops/snagify"
       - "--label=org.opencontainers.image.licenses=MIT"
     extra_files:
       - README.md
@@ -84,10 +84,10 @@ dockers:
       - LICENSE
 
 docker_manifests:
-  - name_template: "ghcr.io/HarshDevelops/snagify:{{ .Version }}"
+  - name_template: "ghcr.io/harshdevelops/snagify:{{ .Version }}"
     image_templates:
-      - "ghcr.io/HarshDevelops/snagify:{{ .Version }}-amd64"
-      - "ghcr.io/HarshDevelops/snagify:{{ .Version }}-arm64"
+      - "ghcr.io/harshdevelops/snagify:{{ .Version }}-amd64"
+      - "ghcr.io/harshdevelops/snagify:{{ .Version }}-arm64"
 
 snapshot:
   version_template: "{{ incpatch .Version }}-next"
