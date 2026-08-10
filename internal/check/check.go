@@ -11,7 +11,9 @@ import (
 
 	"github.com/harshdevelops/snagify/internal/capture"
 	"github.com/harshdevelops/snagify/internal/config"
+	"github.com/harshdevelops/snagify/internal/customcheck"
 	"github.com/harshdevelops/snagify/internal/model"
+	"github.com/harshdevelops/snagify/internal/plugin"
 	"github.com/harshdevelops/snagify/internal/report"
 	"github.com/harshdevelops/snagify/internal/verreq"
 )
@@ -52,6 +54,9 @@ func Run(snap model.Snapshot, cfg config.Config, projectRoot string, opts Option
 	checkDocker(&r, snap, cfg, projectRoot)
 	checkSystem(&r, snap, cfg)
 	checkProbes(&r, snap, cfg)
+	checkEnvSafety(&r, snap)
+	checkCustom(&r, cfg, projectRoot)
+	checkPlugins(&r, cfg, projectRoot)
 
 	if r.Failed() {
 		r.Status = "Your setup is not ready"
@@ -191,6 +196,96 @@ func plural(word string, n int) string {
 	return word + "s"
 }
 
+// checkEnvSafety folds the captured .env safety report into blockers.
+// Tracking .env in git is critical: it almost always leaks production
+// secrets. The other safety items (missing .gitignore, weak mode, weak
+// secrets) are warnings, since fixing them doesn't block the project from
+// running.
+func checkEnvSafety(r *report.Report, snap model.Snapshot) {
+	safety := snap.EnvFiles.Safety
+	if safety == nil {
+		return
+	}
+	if safety.Tracked {
+		r.Add(report.Item{
+			Category: "EnvSafety", Name: ".env (tracked)",
+			Found: "tracked in git", Expected: "gitignored",
+			Severity: report.Critical,
+			Blocker: ".env is tracked in git; remove it from tracking and rotate any leaked secrets immediately",
+		})
+	}
+	if safety.EnvFile != "" && !safety.Gitignored {
+		r.Add(report.Item{
+			Category: "EnvSafety", Name: ".env (gitignore)",
+			Found: "no .gitignore rule covers it", Expected: "covered by .gitignore",
+			Severity: report.Warning,
+			Blocker: ".env exists but is not covered by any .gitignore; add '.env' (or '.env*') to .gitignore",
+		})
+	}
+	if safety.WeakMode {
+		r.Add(report.Item{
+			Category: "EnvSafety", Name: ".env (mode)",
+			Found: "weak permissions", Expected: "0600",
+			Severity: report.Warning,
+			Blocker: ".env is readable by group or other; chmod 0600",
+		})
+	}
+	if len(safety.WeakSecrets) > 0 {
+		var keys []string
+		for _, h := range safety.WeakSecrets {
+			keys = append(keys, h.Key)
+		}
+		sort.Strings(keys)
+		r.Add(report.Item{
+			Category: "EnvSafety", Name: ".env (weak secrets)",
+			Found: fmt.Sprintf("%d leaked-looking %s", len(keys), plural("value", len(keys))),
+			Expected: "no leaked secrets",
+			Severity: report.Warning,
+			Blocker: fmt.Sprintf(".env contains values matching known secret shapes (keys: %s); rotate them in your secret manager", strings.Join(keys, ", ")),
+		})
+	}
+}
+
+// checkCustom executes each `checks.custom` entry under its declared
+// timeout, converting exit codes into report items of category "Custom".
+// Snagify never auto-applies fixes for these — the `fix` action is the
+// user's responsibility — so failures are reported but not actioned.
+func checkCustom(r *report.Report, cfg config.Config, projectRoot string) {
+	if len(cfg.Checks.Custom) == 0 {
+		return
+	}
+	for _, c := range cfg.Checks.Custom {
+		spec := customcheck.Spec{
+			Name:     c.Name,
+			Run:      c.Run,
+			Severity: customcheck.Severity(c.Severity),
+			Message:  c.Message,
+			Timeout:  c.Timeout,
+			Workdir:  c.Workdir,
+		}
+		if spec.Workdir == "" {
+			spec.Workdir = projectRoot
+		}
+		res := customcheck.Run(spec)
+		if res.Error == "" {
+			continue
+		}
+		sev := report.Warning
+		if res.Critical {
+			sev = report.Critical
+		}
+		blocker := fmt.Sprintf("custom check %q failed: %s", c.Name, res.Error)
+		if c.Message != "" {
+			blocker = fmt.Sprintf("%s (%s)", c.Message, res.Error)
+		}
+		r.Add(report.Item{
+			Category: "Custom", Name: c.Name,
+			Found: res.Error, Expected: "exit 0",
+			Severity: sev, Blocker: blocker,
+		})
+	}
+}
+
 func checkPorts(r *report.Report, cfg config.Config, probe PortProbe) {
 	for _, p := range cfg.Ports.MustBeListening {
 		if !probe(p) {
@@ -228,4 +323,51 @@ func fileExists(path string) bool {
 	}
 	info, err := os.Stat(path)
 	return err == nil && !info.IsDir()
+}
+
+// checkPlugins dispatches each configured plugin through the plugin
+// loader. Plugins that refuse to start, exit non-zero, or send malformed
+// JSON produce a Warning - never a Critical - because a broken plugin
+// shouldn't fail the user's CI run on its own. Per-check results are
+// translated into report items using the same severity as the plugin
+// result.
+func checkPlugins(r *report.Report, cfg config.Config, projectRoot string) {
+	if len(cfg.Plugins.Items) == 0 {
+		return
+	}
+	for _, p := range cfg.Plugins.Items {
+		spec := plugin.PluginSpec{
+			Name:        p.Name,
+			Description: p.Description,
+			Binary:      p.Binary,
+			Command:     p.Command,
+			Args:        p.Args,
+			Timeout:     p.Timeout,
+		}
+		rr := plugin.Run(spec, nil, projectRoot)
+		if rr.Error != "" {
+			r.Add(report.Item{
+				Category: "Plugin", Name: p.Name,
+				Found: rr.Error, Expected: "plugin succeeded",
+				Severity: report.Warning,
+				Blocker: fmt.Sprintf("plugin %q: %s", p.Name, rr.Error),
+			})
+			continue
+		}
+		for _, res := range rr.Results {
+			sev := report.Warning
+			if res.Status == "critical" {
+				sev = report.Critical
+			} else if res.Status == "ok" {
+				continue
+			}
+			r.Add(report.Item{
+				Category: "Plugin", Name: res.Name,
+				Found:    res.Message,
+				Expected: "ok",
+				Severity: sev,
+				Blocker:  fmt.Sprintf("plugin %q reported %s for %q: %s", p.Name, res.Status, res.Name, res.Message),
+			})
+		}
+	}
 }
