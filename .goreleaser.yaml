@@ -50,8 +50,9 @@ checksum:
 dockers:
   - id: snagify
     use: buildx
-    goarch: [amd64, arm64]
-    goos: [linux]
+    platforms:
+      - linux/amd64
+      - linux/arm64
     dockerfile: Dockerfile
     image_templates:
       - "ghcr.io/HarshDevelops/snagify:{{ .Version }}"
@@ -67,17 +68,6 @@ dockers:
       - README.md
       - CHANGELOG.md
       - LICENSE
-
-docker_manifests:
-  - name_template: "ghcr.io/HarshDevelops/snagify:{{ .Version }}"
-    image_templates:
-      - "ghcr.io/HarshDevelops/snagify:{{ .Version }}-amd64"
-      - "ghcr.io/HarshDevelops/snagify:{{ .Version }}-arm64"
-  - name_template: "ghcr.io/HarshDevelops/snagify:{{ .Major }}.{{ .Minor }}"
-    image_templates:
-      - "ghcr.io/HarshDevelops/snagify:{{ .Version }}-amd64"
-      - "ghcr.io/HarshDevelops/snagify:{{ .Version }}-arm64"
-  - name_template: "ghcr.io/HarshDevelops/snagify:latest"
     image_templates:
       - "ghcr.io/HarshDevelops/snagify:{{ .Version }}-amd64"
 
