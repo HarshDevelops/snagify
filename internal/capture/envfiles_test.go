@@ -43,7 +43,7 @@ func TestCaptureEnvFiles_MissingKeys(t *testing.T) {
 	writeFile(t, dir, ".env.example", "DATABASE_URL=\nJWT_SECRET=\nPORT=\n")
 	writeFile(t, dir, ".env", "PORT=3000\n")
 
-	got := captureEnvFiles(dir)
+	got := captureEnvFiles(dir, false)
 	if !got.EnvExampleExists || !got.EnvExists {
 		t.Fatalf("expected both files to exist, got %+v", got)
 	}
@@ -58,7 +58,7 @@ func TestCaptureEnvFiles_NoEnv(t *testing.T) {
 	dir := t.TempDir()
 	writeFile(t, dir, ".env.example", "A=\nB=\n")
 
-	got := captureEnvFiles(dir)
+	got := captureEnvFiles(dir, false)
 	if got.EnvExists {
 		t.Error("expected EnvExists=false")
 	}

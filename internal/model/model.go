@@ -81,6 +81,10 @@ type EnvFiles struct {
 	EnvExampleExists bool     `json:"env_example_exists"`
 	EnvExists        bool     `json:"env_exists"`
 	MissingKeys      []string `json:"missing_keys"`
+
+	// Safety is populated by the secret/.env safety scanner. omitempty so
+	// older snapshots that didn't run the scanner still serialise cleanly.
+	Safety *EnvSafety `json:"safety,omitempty"`
 }
 
 // RuntimeField pairs a display name with an accessor into Runtimes,

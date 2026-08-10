@@ -14,13 +14,17 @@ import (
 
 func newInitCmd() *cobra.Command {
 	var force bool
+	var scanSecrets bool
 
 	cmd := &cobra.Command{
 		Use:   "init",
 		Short: "Generate a starter .snagify.yaml from detected project manifests",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			snap, err := capture.Capture(capture.Options{ProjectRoot: flagProjectRoot})
+			snap, err := capture.Capture(capture.Options{
+				ProjectRoot: flagProjectRoot,
+				ScanSecrets: scanSecrets,
+			})
 			if err != nil {
 				return &exitError{code: 2, msg: fmt.Sprintf("capture failed: %v", err)}
 			}
@@ -45,5 +49,7 @@ func newInitCmd() *cobra.Command {
 	}
 
 	cmd.Flags().BoolVar(&force, "force", false, "overwrite an existing .snagify.yaml")
+	cmd.Flags().BoolVar(&scanSecrets, "scan-secrets", false,
+		"opt in to scanning the .env for leaked secret shapes during generate (off by default)")
 	return cmd
 }

@@ -38,6 +38,7 @@ func newCheckCmd() *cobra.Command {
 		pin          string
 		saveBaseline string
 		unsafeHTTP   bool
+		scanSecrets  bool
 		pf           probeFlags
 	)
 
@@ -46,7 +47,10 @@ func newCheckCmd() *cobra.Command {
 		Short: "Check this machine against a repo config (.snagify.yaml) or a baseline",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			snap, err := capture.Capture(capture.Options{ProjectRoot: flagProjectRoot})
+			snap, err := capture.Capture(capture.Options{
+				ProjectRoot: flagProjectRoot,
+				ScanSecrets: scanSecrets,
+			})
 			if err != nil {
 				return &exitError{code: 2, msg: fmt.Sprintf("capture failed: %v", err)}
 			}
@@ -82,6 +86,8 @@ func newCheckCmd() *cobra.Command {
 	cmd.Flags().StringVar(&pin, "pin", "", "expected TLS certificate fingerprint for --from")
 	cmd.Flags().StringVar(&saveBaseline, "save-baseline", "", "save a baseline fetched via --from to this path")
 	cmd.Flags().BoolVar(&unsafeHTTP, "unsafe-http", false, "allow plain HTTP for --from (insecure)")
+	cmd.Flags().BoolVar(&scanSecrets, "scan-secrets", false,
+		"opt in to reading .env values looking for leaked secret shapes (off by default; values are otherwise never captured)")
 	addProbeFlags(cmd, &pf)
 	return cmd
 }

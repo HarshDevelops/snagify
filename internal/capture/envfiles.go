@@ -10,8 +10,10 @@ import (
 )
 
 // captureEnvFiles checks for .env.example and .env in root, and reports keys
-// declared in .env.example that are absent from .env.
-func captureEnvFiles(root string) model.EnvFiles {
+// declared in .env.example that are absent from .env. The safety pass always
+// runs for the non-secret checks (tracked-in-git, gitignore coverage, file
+// mode); the weak-secret value scan only runs when scanValues is true.
+func captureEnvFiles(root string, scanValues bool) model.EnvFiles {
 	examplePath := filepath.Join(root, ".env.example")
 	envPath := filepath.Join(root, ".env")
 
@@ -30,10 +32,13 @@ func captureEnvFiles(root string) model.EnvFiles {
 		missing = append(missing, exampleKeys...)
 	}
 
+	safety := scanEnvSafety(root, scanValues)
+
 	return model.EnvFiles{
 		EnvExampleExists: exampleExists,
 		EnvExists:        envExists,
 		MissingKeys:      missing,
+		Safety:           safety,
 	}
 }
 

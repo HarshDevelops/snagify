@@ -17,13 +17,17 @@ import (
 func newSnapshotCmd() *cobra.Command {
 	var quiet bool
 	var probes bool
+	var scanSecrets bool
 
 	cmd := &cobra.Command{
 		Use:   "snapshot [output.json]",
 		Short: "Capture the current machine and project state",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			snap, err := capture.Capture(capture.Options{ProjectRoot: flagProjectRoot})
+			snap, err := capture.Capture(capture.Options{
+				ProjectRoot: flagProjectRoot,
+				ScanSecrets: scanSecrets,
+			})
 			if err != nil {
 				return fmt.Errorf("capture failed: %w", err)
 			}
@@ -61,6 +65,8 @@ func newSnapshotCmd() *cobra.Command {
 
 	cmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "suppress non-error output")
 	cmd.Flags().BoolVar(&probes, "probes", false, "also run active probes declared in .snagify.yaml")
+	cmd.Flags().BoolVar(&scanSecrets, "scan-secrets", false,
+		"opt in to reading .env values looking for leaked secret shapes (off by default; values are otherwise never captured)")
 	return cmd
 }
 

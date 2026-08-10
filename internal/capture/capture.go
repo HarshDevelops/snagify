@@ -11,6 +11,10 @@ import (
 type Options struct {
 	// ProjectRoot overrides project auto-detection when non-empty.
 	ProjectRoot string
+	// ScanSecrets opts into reading .env values to look for known-leaked
+	// secret shapes (AWS keys, GitHub PATs, etc.). Defaults to false because
+	// Snagify's "values are never captured" rule is otherwise sacred.
+	ScanSecrets bool
 }
 
 // Capture builds a full Snapshot of the current machine and project.
@@ -39,7 +43,7 @@ func Capture(opts Options) (model.Snapshot, error) {
 		Environment: captureEnvironment(),
 		Runtimes:    captureRuntimes(),
 		Services:    capturePorts(),
-		EnvFiles:    captureEnvFiles(project.Root),
+		EnvFiles:    captureEnvFiles(project.Root, opts.ScanSecrets),
 		Git:         &git,
 		Path:        &pathInfo,
 		System:      &system,
