@@ -28,6 +28,47 @@ type Config struct {
 	Network  Network  `yaml:"network"`
 	TLS      TLS      `yaml:"tls"`
 	System   System   `yaml:"system"`
+	Databases Databases `yaml:"databases"`
+
+	// v0.5 optional sections.
+	Checks  Checks  `yaml:"checks"`
+	Plugins Plugins `yaml:"plugins"`
+}
+
+// Checks groups user-defined shell checks under one section so additional
+// check families (e.g. http probes, regex asserts) can be added later
+// without colliding with custom-check numbering.
+type Checks struct {
+	Custom []CustomCheck `yaml:"custom"`
+}
+
+// CustomCheck is one entry of `checks.custom` in .snagify.yaml. Snagify runs
+// the command, captures exit code + truncated stdout/stderr, and converts
+// the result into a report item. Severity defaults to "warning" if unset.
+type CustomCheck struct {
+	Name     string   `yaml:"name"`
+	Run      []string `yaml:"run"`
+	Severity string   `yaml:"severity"`
+	Message  string   `yaml:"message"`
+	Timeout  string   `yaml:"timeout"`
+	Workdir  string   `yaml:"workdir"`
+}
+
+// Plugins describes external snagify-plugin-* binaries. Each is a
+// subprocess that speaks the snagify/plugin/v1 JSON contract.
+type Plugins struct {
+	Items []PluginSpec `yaml:"items"`
+}
+
+// PluginSpec is one plugin invocation. Either Binary (on $PATH) or Command
+// (relative to the project root, may include args) must be set.
+type PluginSpec struct {
+	Name        string `yaml:"name"`
+	Description string `yaml:"description,omitempty"`
+	Binary      string `yaml:"binary,omitempty"`
+	Command     string `yaml:"command,omitempty"`
+	Args        []string `yaml:"args,omitempty"`
+	Timeout     string `yaml:"timeout,omitempty"`
 }
 
 // Path describes PATH/executable requirements.
@@ -133,13 +174,54 @@ type Git struct {
 	WarnIfDirty       bool   `yaml:"warn_if_dirty"`
 }
 
+// Databases describes protocol-level database probes. These probes send no
+// credentials: Redis uses an unauthenticated PING, Postgres uses an
+// SSLRequest packet (no StartupMessage, no auth), and MySQL reads only the
+// server's Initial Handshake packet. They confirm that the server speaks
+// the expected wire protocol on the target port.
+type Databases struct {
+	Postgres []PostgresService `yaml:"postgres"`
+	MySQL    []MySQLService    `yaml:"mysql"`
+	Redis    []RedisService    `yaml:"redis"`
+}
+
+// PostgresService is a single Postgres wire-protocol probe target.
+type PostgresService struct {
+	Name      string `yaml:"name"`
+	Host      string `yaml:"host"`
+	Port      int    `yaml:"port"`
+	Required  bool   `yaml:"required"`
+	TimeoutMS int    `yaml:"timeout_ms"`
+}
+
+// MySQLService is a single MySQL wire-protocol probe target.
+type MySQLService struct {
+	Name      string `yaml:"name"`
+	Host      string `yaml:"host"`
+	Port      int    `yaml:"port"`
+	Required  bool   `yaml:"required"`
+	TimeoutMS int    `yaml:"timeout_ms"`
+}
+
+// RedisService is a single Redis wire-protocol probe target.
+type RedisService struct {
+	Name      string `yaml:"name"`
+	Host      string `yaml:"host"`
+	Port      int    `yaml:"port"`
+	Required  bool   `yaml:"required"`
+	TimeoutMS int    `yaml:"timeout_ms"`
+}
+
 // HasActiveProbes reports whether the config declares any probe that requires
 // network/service/TLS activity.
 func (c Config) HasActiveProbes() bool {
 	return len(c.Services.TCP) > 0 ||
 		len(c.Network.DNS) > 0 ||
 		len(c.Network.HTTP) > 0 ||
-		len(c.TLS.Endpoints) > 0
+		len(c.TLS.Endpoints) > 0 ||
+		len(c.Databases.Postgres) > 0 ||
+		len(c.Databases.MySQL) > 0 ||
+		len(c.Databases.Redis) > 0
 }
 
 // Ignore lists items to skip during checks.

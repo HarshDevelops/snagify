@@ -91,7 +91,44 @@ func checkProbes(r *report.Report, snap model.Snapshot, cfg config.Config) {
 		checkTLSResult(r, t, tlsThreshold(cfg, t.Name))
 	}
 
+	for _, d := range p.DB {
+		checkDBResult(r, d)
+	}
+
 	checkProxyDrift(r, snap)
+}
+
+// checkDBResult folds a single database wire-protocol probe result into the
+// report. Required failures are Critical; unreachable but optional probes
+// are Warnings. Reachable+not-handshake-ok (e.g. Redis returns -NOAUTH) is
+// treated as a Warning regardless of Required — the server is up, the user
+// just needs to configure auth.
+func checkDBResult(r *report.Report, d model.DBProbeResult) {
+	if d.Reachable && d.HandshakeOK {
+		return
+	}
+	if d.Reachable && !d.HandshakeOK {
+		// Server is up but didn't accept our ping.
+		r.Add(report.Item{
+			Category: "Database", Name: d.Name,
+			Found: fmt.Sprintf("%s on %s:%d replied but handshake incomplete", d.Backend, d.Host, d.Port),
+			Expected: fmt.Sprintf("%s server responds to unauthenticated probe", d.Backend),
+			Severity: report.Warning,
+		})
+		return
+	}
+	sev := report.Warning
+	var blocker string
+	if d.Required {
+		sev = report.Critical
+		blocker = fmt.Sprintf("%s server %s (%s:%d) is unreachable", d.Backend, d.Name, d.Host, d.Port)
+	}
+	r.Add(report.Item{
+		Category: "Database", Name: d.Name,
+		Found:    fmt.Sprintf("%s:%d unreachable", d.Host, d.Port),
+		Expected: fmt.Sprintf("%s server reachable", d.Backend),
+		Severity: sev, Blocker: blocker,
+	})
 }
 
 // tlsThreshold returns the warn_if_expires_within_days for an endpoint by name.

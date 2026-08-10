@@ -67,6 +67,7 @@ type ProbeResults struct {
 	DNS   []DNSProbeResult  `json:"dns,omitempty"`
 	HTTP  []HTTPProbeResult `json:"http,omitempty"`
 	TLS   []TLSProbeResult  `json:"tls,omitempty"`
+	DB    []DBProbeResult   `json:"db,omitempty"`
 	Proxy ProxyInfo         `json:"proxy,omitempty"`
 	Ran   bool              `json:"ran"`
 }

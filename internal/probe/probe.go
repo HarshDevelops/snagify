@@ -1,7 +1,9 @@
-// Package probe performs active connectivity probes (TCP, DNS, HTTP, TLS) and
-// captures proxy env presence. All probes are read-only: no credentials are
-// sent, no database protocols are spoken, and HTTP response bodies are never
-// read or stored.
+// Package probe performs active connectivity probes (TCP, DNS, HTTP, TLS,
+// and unauthenticated database wire-protocol probes) and captures proxy env
+// presence. All probes are read-only: no credentials are sent, HTTP response
+// bodies and database payload contents are never read or stored, and the
+// only writes to a database socket are the protocol pings required to elicit
+// an authentication handshake. No password, key, or query is transmitted.
 package probe
 
 import (
@@ -62,6 +64,10 @@ func Run(cfg config.Config, opts Options) model.ProbeResults {
 		for _, ep := range cfg.TLS.Endpoints {
 			res.TLS = append(res.TLS, probeTLS(ep, opts.DefaultTimeout, opts.InsecureProbe))
 		}
+	}
+
+	if len(cfg.Databases.Postgres) > 0 || len(cfg.Databases.MySQL) > 0 || len(cfg.Databases.Redis) > 0 {
+		res.DB = runDBProbes(cfg, opts.DefaultTimeout)
 	}
 
 	if cfg.Network.Proxy.CaptureEnv {
