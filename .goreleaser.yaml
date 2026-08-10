@@ -68,8 +68,6 @@ dockers:
       - README.md
       - CHANGELOG.md
       - LICENSE
-    image_templates:
-      - "ghcr.io/HarshDevelops/snagify:{{ .Version }}-amd64"
 
 snapshot:
   version_template: "{{ incpatch .Version }}-next"
