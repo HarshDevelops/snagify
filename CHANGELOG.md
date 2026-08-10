@@ -96,3 +96,63 @@ Initial release.
 - Prepare clean PyPI package `snagify`.
 - Add Homebrew formula template.
 - No product behavior changes.
+
+## v0.5.0
+
+Six feature sprint — Closes the v0.4.1 roadmap (GitHub Action, plugin
+system) and ships four additional capabilities that round Snagify out
+against peer tooling.
+
+- **GitHub Action** (`.github/actions/snagify-check`): composite action
+  that downloads the GoReleaser binary for the runner OS/arch, verifies
+  it against `dist/checksums.txt`, and runs `snagify check`. Inputs
+  `version`, `config`, `fail_on_blocker`, `args`, `workdir`. Example
+  workflow in `examples/workflows/snagify-ci.yml`. The project itself
+  bootstraps the missing CI/releaser infrastructure at
+  `.github/workflows/ci.yml` and `.github/workflows/release.yml`.
+- **Protocol-level probes** (`internal/probe/db.go`): three new
+  credential-free probes — `redis.ping`, `postgres.startup`,
+  `mysql.handshake`. Activated via the new `databases:` section of
+  `.snagify.yaml`. Failures become `report.Item{Category: "Database"}`,
+  `Required` upgrades severity to Critical.
+- **Custom shell checks** (`internal/customcheck`): new `checks.custom`
+  block lets `.snagify.yaml` declare project-specific invariants executed
+  under a per-check timeout with stdout/stderr captured and truncated.
+  Unknown severity defaults to warning.
+- **Docker image** (`Dockerfile` + GoReleaser `dockers:` block): published
+  as `ghcr.io/HarshDevelops/snagify` for `linux/amd64` and `linux/arm64`.
+  Final stage on `gcr.io/distroless/base-debian12:nonroot` so runtime
+  shell-out for `node --version` etc. keeps working. See `docs/docker.md`.
+- **Secret / `.env` safety scan** (`internal/capture/secretscan.go`):
+  four checks that always run — `.env` tracked in git (critical),
+  missing `.gitignore` coverage (warning), group/other-readable `.env`
+  mode on Unix (warning), and Shannon-entropy > 4.5 over a 24+ char
+  value (warning). A value-reading scan for known secret shapes
+  (AWS/GitHub/Stripe/OpenAI/Slack/Google/JWT) is opt-in via
+  `--scan-secrets` on `snapshot`, `check`, and `init`. Values are
+  never persisted — only key names + reasons surface.
+- **Plugin system** (`internal/plugin/` + companion `cmd/snagify-plugin-shellcheck/`):
+  subprocess + JSON-RPC contract `snagify/plugin/v1`. Plugins are
+  external binaries; the loader resolves `binary` (PATH) or `command`
+  (executed directly), enforces a timeout, parses one JSON document from
+  stdout, and translates per-check results into `report.Item{Category:
+  "Plugin"}`. The bundled `snagify-plugin-shellcheck` companion reuses
+  the same `checks.custom` schema so users get feature-3 ergonomics
+  with feature-6 isolation.
+
+Upgrade notes:
+- All additions are backward-compatible additive sections; v0.4.x
+  `.snagify.yaml` files keep parsing unchanged.
+- `--scan-secrets` is required to enable value-reading patterns; the
+  other three safety items run unconditionally.
+- The Go module path stays `github.com/harshdevelops/snagify`; the
+  companion binary `snagify-plugin-shellcheck` is independent (no
+  Go module needed by users — it ships prebuilt in
+  `dist/`).
+
+Verified:
+- `go build ./...` clean.
+- `go vet ./...` clean.
+- `go test ./...` — all packages green (capture, check, config,
+  customcheck, plugin, probe, share, lan, initcfg, fixplan, model,
+  share, team, verreq).

@@ -36,6 +36,35 @@ cd snagify
 go build -o snagify .
 ```
 
+Other install methods (all ship the same static binary):
+
+```sh
+# Prebuilt release tarball.
+curl -fsSL -O https://github.com/HarshDevelops/snagify/releases/latest/download/snagify_Linux_x86_64.tar.gz
+tar -xzf snagify_Linux_x86_64.tar.gz && sudo mv snagify /usr/local/bin/
+
+# Docker (multi-arch distroless image; binary on PATH inside the container).
+docker run --rm -v "$PWD:/workspace" -w /workspace ghcr.io/HarshDevelops/snagify check
+
+# npm — wraps the GitHub Release tarball; verifies SHA-256 at install time.
+npm install -g snagify
+
+# PyPI — same wrapper, Python-flavoured.
+pip install snagify
+
+# Homebrew — formula lives in packaging/homebrew/snagify.rb.
+brew install HarshDevelops/tap/snagify
+```
+
+Run Snagify in CI via the GitHub Action
+([`.github/actions/snagify-check`](./.github/actions/snagify-check)):
+
+```yaml
+- uses: HarshDevelops/snagify/.github/actions/snagify-check@v0.5.0
+  with:
+    args: --no-tls --timeout 10s
+```
+
 ## 30-second demo
 
 Inside a repo:

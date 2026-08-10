@@ -9,7 +9,7 @@ import (
 )
 
 // version is injected from main at startup; set here as fallback.
-var version = "0.4.1"
+var version = "0.5.0"
 
 // lanAdvertiser wraps lan.Advertiser with a simple stop method.
 type lanAdvertiser struct {
