@@ -1,0 +1,50 @@
+# Example: gate merges on environment drift using snagify.
+#
+# Copy this file to .github/workflows/snagify-ci.yml in your own repo and
+# add a .snagify.yaml at the repo root (run `snagify init` against your
+# project to generate one).
+#
+# Docs: https://github.com/HarshDevelops/snagify
+
+name: snagify (environment drift)
+
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+jobs:
+  snagify:
+    name: snagify check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: snagify check
+        uses: HarshDevelops/snagify/.github/actions/snagify-check@main
+        with:
+          # Pin to a specific version for reproducibility:
+          version: v0.5.0
+          config: .snagify.yaml
+          # Forward any extra flags to `snagify check`:
+          args: --no-tls --timeout 10s
+
+  snagify-probe:
+    name: snagify probe (advisory)
+    runs-on: ubuntu-latest
+    # Set `continue-on-error` to true so probe failures don't block PRs.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: HarshDevelops/snagify/.github/actions/snagify-check@main
+        with:
+          fail_on_blocker: 'false'
+      - name: run probe
+        run: snagify probe --format json > snagify-probe.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: snagify-probe
+          path: snagify-probe.json

@@ -47,6 +47,40 @@ checksum:
   name_template: checksums.txt
   algorithm: sha256
 
+dockers:
+  - id: snagify
+    use: buildx
+    goarch: [amd64, arm64]
+    goos: [linux]
+    dockerfile: Dockerfile
+    image_templates:
+      - "ghcr.io/HarshDevelops/snagify:{{ .Version }}"
+      - "ghcr.io/HarshDevelops/snagify:{{ .Major }}.{{ .Minor }}"
+      - "ghcr.io/HarshDevelops/snagify:latest"
+    build_flag_templates:
+      - "--pull"
+      - "--label=org.opencontainers.image.title=snagify"
+      - "--label=org.opencontainers.image.description=Single-binary CLI to debug works-on-my-machine issues by detecting environment drift."
+      - "--label=org.opencontainers.image.source=https://github.com/HarshDevelops/snagify"
+      - "--label=org.opencontainers.image.licenses=MIT"
+    extra_files:
+      - README.md
+      - CHANGELOG.md
+      - LICENSE
+
+docker_manifests:
+  - name_template: "ghcr.io/HarshDevelops/snagify:{{ .Version }}"
+    image_templates:
+      - "ghcr.io/HarshDevelops/snagify:{{ .Version }}-amd64"
+      - "ghcr.io/HarshDevelops/snagify:{{ .Version }}-arm64"
+  - name_template: "ghcr.io/HarshDevelops/snagify:{{ .Major }}.{{ .Minor }}"
+    image_templates:
+      - "ghcr.io/HarshDevelops/snagify:{{ .Version }}-amd64"
+      - "ghcr.io/HarshDevelops/snagify:{{ .Version }}-arm64"
+  - name_template: "ghcr.io/HarshDevelops/snagify:latest"
+    image_templates:
+      - "ghcr.io/HarshDevelops/snagify:{{ .Version }}-amd64"
+
 snapshot:
   version_template: "{{ incpatch .Version }}-next"
 

@@ -1,0 +1,29 @@
+# Keep the build context small. The Go module graph + sources only.
+.git
+.github
+.gitignore
+.vscode
+.idea
+
+# Pre-built artifacts
+dist/
+snagify
+snagify.exe
+*.test
+*.out
+
+# Asset noise that does not belong in a runtime container
+assets/
+docs/
+examples/
+*.gif
+*.mp4
+*.png
+*.jpg
+
+# Go build artifacts
+vendor/
+
+# Editor / OS
+.DS_Store
+Thumbs.db
