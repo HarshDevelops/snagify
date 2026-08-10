@@ -47,47 +47,14 @@ checksum:
   name_template: checksums.txt
   algorithm: sha256
 
-dockers:
-  - id: snagify-amd64
-    use: buildx
-    goos: linux
-    goarch: amd64
-    dockerfile: Dockerfile
-    image_templates:
-      - "ghcr.io/harshdevelops/snagify:{{ .Version }}-amd64"
-    build_flag_templates:
-      - "--pull"
-      - "--label=org.opencontainers.image.title=snagify"
-      - "--label=org.opencontainers.image.description=Single-binary CLI to debug works-on-my-machine issues by detecting environment drift."
-      - "--label=org.opencontainers.image.source=https://github.com/Harshdevelops/snagify"
-      - "--label=org.opencontainers.image.licenses=MIT"
-    extra_files:
-      - README.md
-      - CHANGELOG.md
-      - LICENSE
-  - id: snagify-arm64
-    use: buildx
-    goos: linux
-    goarch: arm64
-    dockerfile: Dockerfile
-    image_templates:
-      - "ghcr.io/harshdevelops/snagify:{{ .Version }}-arm64"
-    build_flag_templates:
-      - "--pull"
-      - "--label=org.opencontainers.image.title=snagify"
-      - "--label=org.opencontainers.image.description=Single-binary CLI to debug works-on-my-machine issues by detecting environment drift."
-      - "--label=org.opencontainers.image.source=https://github.com/Harshdevelops/snagify"
-      - "--label=org.opencontainers.image.licenses=MIT"
-    extra_files:
-      - README.md
-      - CHANGELOG.md
-      - LICENSE
-
-docker_manifests:
-  - name_template: "ghcr.io/harshdevelops/snagify:{{ .Version }}"
-    image_templates:
-      - "ghcr.io/harshdevelops/snagify:{{ .Version }}-amd64"
-      - "ghcr.io/harshdevelops/snagify:{{ .Version }}-arm64"
+# Docker images are built in their own GitHub Actions job (.github/workflows/release.yml#docker)
+# rather than via this goreleaser block. Reason: goreleaser 2.x's `dockers:` block requires a
+# Dockerfile that builds from source inside BuildKit, but snagify's Dockerfile distroless base
+# has no Go toolchain — the binary has to be produced by goreleaser first and COPY'd in.
+# Doing both in one job meant goreleaser's build context lacked go.sum (the source-only context
+# is the issue), so we split the pipeline: goreleaser produces dist/, then the docker job
+# extracts dist/snagify_Linux_x86_64.tar.gz and COPY's the binary into the image.
+# See https://github.com/HarshDevelops/snagify/blob/main/.github/workflows/release.yml
 
 snapshot:
   version_template: "{{ incpatch .Version }}-next"

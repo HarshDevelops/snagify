@@ -10,8 +10,10 @@ permissions:
 
 jobs:
   goreleaser:
-    name: GoReleaser
+    name: GoReleaser (archives + checksums + GitHub release)
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -22,7 +24,12 @@ jobs:
           go-version: '1.25'
           cache: true
 
-      - name: Run GoReleaser
+      - id: meta
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Run GoReleaser (archives only — no docker block in config)
         uses: goreleaser/goreleaser-action@v6
         with:
           version: latest
@@ -33,7 +40,7 @@ jobs:
   docker:
     name: docker multi-arch build & push
     runs-on: ubuntu-latest
-    needs: goreleaser
+    needs: [goreleaser]
     steps:
       - uses: actions/checkout@v4
 
@@ -54,7 +61,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/HarshDevelops/snagify
+          images: ghcr.io/harshdevelops/snagify
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
@@ -62,12 +69,49 @@ jobs:
           flavor: |
             latest=auto
 
-      - name: Build and push
+      # Build per-arch images with the right PLATFORM build-arg so the
+      # multi-stage fetch step downloads the correct tarball.
+      - name: Build and push linux/amd64
         uses: docker/build-push-action@v6
         with:
           context: .
-          platforms: linux/amd64,linux/arm64
+          file: Dockerfile
+          build-args: |
+            VERSION=${{ needs.goreleaser.outputs.version }}
+            PLATFORM=amd64
+          platforms: linux/amd64
+          tags: |
+            ghcr.io/harshdevelops/snagify:${{ needs.goreleaser.outputs.version }}-amd64
+            ghcr.io/harshdevelops/snagify:latest-amd64
           labels: ${{ steps.meta.outputs.labels }}
-          tags: ${{ steps.meta.outputs.tags }}
-          provenance: true
-          sbom: true
+          push: true
+
+      - name: Build and push linux/arm64
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          build-args: |
+            VERSION=${{ needs.goreleaser.outputs.version }}
+            PLATFORM=arm64
+          platforms: linux/arm64
+          tags: |
+            ghcr.io/harshdevelops/snagify:${{ needs.goreleaser.outputs.version }}-arm64
+            ghcr.io/harshdevelops/snagify:latest-arm64
+          labels: ${{ steps.meta.outputs.labels }}
+          push: true
+
+      # Combine into a multi-arch manifest for each semver tag.
+      - name: Combine into multi-arch manifest
+        run: |
+          VERSION="${{ needs.goreleaser.outputs.version }}"
+          docker manifest create \
+            "ghcr.io/harshdevelops/snagify:${VERSION}" \
+              "ghcr.io/harshdevelops/snagify:${VERSION}-amd64" \
+              "ghcr.io/harshdevelops/snagify:${VERSION}-arm64"
+          docker manifest push "ghcr.io/harshdevelops/snagify:${VERSION}"
+          docker manifest create \
+            "ghcr.io/harshdevelops/snagify:latest" \
+              "ghcr.io/harshdevelops/snagify:${VERSION}-amd64" \
+              "ghcr.io/harshdevelops/snagify:${VERSION}-arm64"
+          docker manifest push "ghcr.io/harshdevelops/snagify:latest"
